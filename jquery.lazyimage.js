@@ -39,13 +39,19 @@
 		self.src = self.img.data('src'),
 		self.loaded = false;
 
+		self.img.css({
+			width: self.img.attr('width'),
+			height: self.img.attr('height')
+		});
+
 		self.loadImage = function() {
 			$('<img />')
 				.on('load', function() {
 					self.img
-						.hide()
+						.removeAttr('style')
+						.css('opacity', 0)
 						.attr('src', self.src)
-						.fadeIn()
+						.animate({opacity: 1})
 						.addClass('lazy-loaded');
 					self.loaded = true;
 					self.img.trigger('loaded');
