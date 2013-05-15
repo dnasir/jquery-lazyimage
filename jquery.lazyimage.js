@@ -1,6 +1,6 @@
 /* 
  *   jQuery LazyImage Plugin for ImageResizer.NET 1.0.0
- *   https://github.com/dnasir/jquery-lazyimage
+ *   https://github.com/dnasir/jquery-lazyimage/tree/imageresizer.net
  *
  *   Copyright 2013, Dzulqarnain Nasir
  *   http://dnasir.com
