@@ -1,6 +1,6 @@
 /* 
- *   jQuery LazyImage Plugin for ImageResizer.NET 1.0.0
- *   https://github.com/dnasir/jquery-lazyimage/tree/imageresizer.net
+ *   jQuery LazyImage Plugin for ImageResizer.NET 1.0.1
+ *   https://github.com/dnasir/jquery-lazyimage
  *
  *   Copyright 2013, Dzulqarnain Nasir
  *   http://dnasir.com
@@ -80,13 +80,13 @@
         // Public methods
         self.loadImage = function () {
             var temp = $('<img />')
-                .on('load', function () {
+                .on('load', function() {
                     self.img
                         .removeAttr('style')
                         .css('opacity', 0)
                         .attr('src', src);
 
-                    if(useOriginalSize) {
+                    if (useOriginalSize) {
                         self.img.attr({
                             width: this.width,
                             height: this.height
@@ -96,14 +96,14 @@
                     if (fadeIn) {
                         self.img.animate({ opacity: 1 });
                     } else {
-                        self.img.css({ opacity: 1 })
+                        self.img.css({ opacity: 1 });
                     }
 
                     self.loaded = true;
                     self.img.addClass('lazy-loaded').trigger('lazyLoaded');
-                })
-                .attr('src', src);
+                });
 
+            // If responsive, then take care of it
             if (responsive) {
                 var currentWidth;
                 var breakpoints = $.map(responsive, function (val) {
@@ -121,7 +121,7 @@
                     clearTimeout(t);
                     t = setTimeout(function () {
                         var width = win.width(),
-                            _breakpoints = new Array();
+                            _breakpoints = [];
 
                         if (win[0].scrollHeight > win.innerHeight()) {
                             width += 30;
@@ -143,7 +143,11 @@
                 }
 
                 win.on('resize', resize);
-                self.img.one('lazyLoaded', resize);
+                resize();
+            }
+            // Otherwise load image as usual
+            else {
+                temp.attr('src', src);
             }
         };
     }
