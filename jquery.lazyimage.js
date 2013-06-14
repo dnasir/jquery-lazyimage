@@ -1,5 +1,5 @@
 /* 
- *   jQuery LazyImage Plugin 1.0.1
+ *   jQuery LazyImage Plugin 1.0.2
  *   https://github.com/dnasir/jquery-lazyimage
  *
  *   Copyright 2013, Dzulqarnain Nasir
@@ -9,92 +9,109 @@
  *   http://www.opensource.org/licenses/MIT
  */
 
-(function($, window) {
-    var win = $(window);
+(function ($, window) {
+    var $window = $(window);
 
+    // Helpers
     function isInViewport(el) {
         var viewport = {
-            top : win.scrollTop(),
-            left : win.scrollLeft()
+            top: $window.scrollTop(),
+            left: $window.scrollLeft()
         };
-        viewport.right = viewport.left + win.width();
-        viewport.bottom = viewport.top + win.height();
+        viewport.right = viewport.left + $window.width();
+        viewport.bottom = viewport.top + $window.height();
 
         var bounds = el[0].getBoundingClientRect();
         bounds.right = bounds.left + el.outerWidth();
         bounds.bottom = bounds.top + el.outerHeight();
 
         return (
-            !(viewport.right < bounds.left 
-                || viewport.left > bounds.right 
-                || viewport.bottom < bounds.top 
+            !(viewport.right < bounds.left
+                || viewport.left > bounds.right
+                || viewport.bottom < bounds.top
                 || viewport.top > bounds.bottom)
             && el.is(':visible')
             );
     }
 
-    function LazyImage(img) {
-        var self = this;
-        self.img = $(img);
-        self.src = self.img.data('src');
-        self.useOriginalSize = self.img.data('use-original-size');
-        self.loaded = false;
+    // LazyImage constructor
+    $.LazyImage = function(img) {
+        this.$img = $(img);
+        this.loading = false;
+        this.originalSrc = this.$img.data('src');
+        this.fadeIn = this.$img.data('fade-in');
+        this.init();
+    };
 
-        self.img.css({
-            width: self.img.attr('width'),
-            height: self.img.attr('height')
-        });
+    // Public methods
+    $.LazyImage.prototype = {
+        init: function () {
+            var self = this,
+                fadeIn = this.fadeIn;
 
-        self.loadImage = function() {
-            $('<img />')
-                .on('load', function () {
-                    self.img
+            self.$fakeImg = $('<img />')
+                .on('load', function() {
+                    self.$img
                         .removeAttr('style')
                         .css('opacity', 0)
-                        .attr('src', self.src);
+                        .attr('src', $(this).attr('src'));
 
-                    if(self.useOriginalSize) {
-                        self.img.attr({
-                            width: this.width,
-                            height: this.height
-                        });
+                    if (fadeIn) {
+                        self.$img.animate({ opacity: 1 });
+                    } else {
+                        self.$img.css({ opacity: 1 });
                     }
 
-                    self.img.animate({ opacity: 1 }).addClass('lazy-loaded');
-                    self.loaded = true;
-                    self.img.trigger('lazyLoaded');
+                    self.$img.addClass('lazy-loaded');
                 })
-                .attr('src', self.src);
-        };
-    }
+                .on('load error', function () {
+                    self.loading = false;
+                    self.$img.trigger('lazyLoaded');
+                });
+        },
 
-    $.fn.lazyImage = function() {
-        var images = this.map(function() {
-            return new LazyImage(this);
-        });
+        loadImage: function () {
+            this.$fakeImg.attr('src', this.originalSrc);
+        },
+
+        destroy: function() {
+            $(this).data('plugin_lazyImage', undefined);
+            
+        }
+    };
+
+    // jQuery interface
+    $.fn.lazyImage = function () {
+        // Build array of LazyImage objects
+        var resolvedImageCount = 0,
+            images = this.map(function () {
+                var li = new $.LazyImage(this);
+                $(this).data('plugin_lazyImage', li);
+                return li;
+            });
 
         function update() {
-            $.each(images, function() {
-                if (isInViewport(this.img) && !this.loaded) {
+            $.each(images, function () {
+                // Load images when it's visible in the viewport
+                if (isInViewport(this.$img) && !this.loading) {
+                    this.loading = true;
                     this.loadImage();
                 }
             });
 
-            if (!images.length) {
-                win.off('load scroll resize', update);
+            // Once all images have been processed, remove event handler
+            if (resolvedImageCount >= images.length) {
+                $window.off('load scroll resize', update);
             }
         }
 
-        this.each(function() {
-            $(this).on('lazyLoaded', function() {
-                images = $.grep(images, function(img) {
-                    return !img.loaded;
-                });
-            });
-        });
+        // Remove images that have been loaded from array
+        $(this).on('lazyLoaded', function () { resolvedImageCount++; });
 
-        win.on('load scroll resize', update);
+        // Set up event handler
+        $window.on('load scroll resize', update);
+
+        // Return original object to maintain chainability
+        return this;
     };
-
-    $('img.lazy-image[data-src]').lazyImage();
 })(jQuery, window);
