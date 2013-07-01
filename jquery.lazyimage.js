@@ -1,5 +1,5 @@
 /* 
- *   jQuery LazyImage Plugin 1.0.2
+ *   jQuery LazyImage Plugin 1.0.3
  *   https://github.com/dnasir/jquery-lazyimage
  *
  *   Copyright 2013, Dzulqarnain Nasir
@@ -64,9 +64,9 @@
 
                     self.$img.addClass('lazy-loaded');
                 })
-                .on('load error', function () {
+                .on('load error', function (e) {
                     self.loading = false;
-                    self.$img.trigger('lazyLoaded');
+                    self.$img.trigger('lazyLoaded', [self, e.type]);
                 });
         },
 
@@ -83,13 +83,12 @@
     // jQuery interface
     $.fn.lazyImage = function () {
         // Build array of LazyImage objects
-        var resolvedImageCount = 0,
-            images = this.map(function () {
-                var li = new $.LazyImage(this);
-                $(this).data('plugin_lazyImage', li);
-                return li;
+        var images = this.filter('img').map(function () {
+                var image = new $.LazyImage(this);
+                $(this).data('plugin_lazyImage', image);
+                return image;
             });
-
+        
         function update() {
             $.each(images, function () {
                 // Load images when it's visible in the viewport
@@ -100,13 +99,17 @@
             });
 
             // Once all images have been processed, remove event handler
-            if (resolvedImageCount >= images.length) {
+            if(images.length <= 0) {
                 $window.off('load scroll resize', update);
             }
         }
 
         // Remove images that have been loaded from array
-        $(this).on('lazyLoaded', function () { resolvedImageCount++; });
+        $(this).on('lazyLoaded', function (e, image) {
+            images = images.filter(function() {
+                return this.originalSrc != image.originalSrc;
+            });
+        });
 
         // Set up event handler
         $window.on('load scroll resize', update);
